@@ -38,6 +38,10 @@
             var keyboard = {};
             var player = { height:1.8, speed:10, turnSpeed:Math.PI*0.02 };
             var MAX_IMAGE = 22;
+            var IMAGE_POSITIONS = {};
+            let IMAGE_NAME = "FILM-";
+            let BACK_NAME = "BACK-";
+            let EXAMINE = false;
 
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
@@ -130,13 +134,14 @@
 
                             function addPainting( zscene, zmesh ) {
                                 
-                                zmesh.position.x += 1000*order;
-                                zmesh.position.z -= 1000*order;
+                                zmesh.position.x += 1500*order;
+                                zmesh.position.z -= 1500*order;
                                 zmesh.scale.x = image.width / 100;
                                 zmesh.scale.y = image.height / 100;
                                 zmesh.position.y = HEIGHT_ABOVE_GROUND;
-                                console.log(zmesh.name)
                                 zmesh.name = "FILM-" + order;
+                                IMAGE_POSITIONS[zmesh.name] = zmesh.position;
+                                console.log("ADDING ", zmesh.name);
                                 zscene.add( zmesh );
 
                                 var meshFrame = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x000000 } ) );
@@ -144,21 +149,21 @@
                                 meshFrame.position.y = HEIGHT_ABOVE_GROUND;
                                 meshFrame.scale.x = 1.1 * image.width / 100;
                                 meshFrame.scale.y = 1.1 * image.height / 100;
-                                meshFrame.position.x += 1000*order;
-                                meshFrame.position.z -= 1000*order;
+                                meshFrame.position.x += 1500*order;
+                                meshFrame.position.z -= 1500*order;
                                 meshFrame.name = "BACK-" + order;
                                 zscene.add( meshFrame );
 
-                                var meshShadow = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.75, transparent: true } ) );
-                                meshShadow.position.y = - 1.1 * image.height / 2;
-                                meshShadow.position.z = - 1.1 * image.height / 2;
-                                meshShadow.rotation.x = - Math.PI / 2;
-                                meshShadow.scale.x = 1.1 * image.width / 100;
-                                meshShadow.scale.y = 1.1 * image.height / 100;
-                                meshShadow.position.x += 1000*order;
-                                meshShadow.position.z -= 1000*order;
-                                meshShadow.name = "SHA-" + order;
-                                zscene.add( meshShadow );
+                                // var meshShadow = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.75, transparent: true } ) );
+                                // meshShadow.position.y = - 1.1 * image.height / 2;
+                                // meshShadow.position.z = - 1.1 * image.height / 2;
+                                // meshShadow.rotation.x = - Math.PI / 2;
+                                // meshShadow.scale.x = 1.1 * image.width / 100;
+                                // meshShadow.scale.y = 1.1 * image.height / 100;
+                                // meshShadow.position.x += 1000*order;
+                                // meshShadow.position.z -= 1000*order;
+                                // meshShadow.name = "SHA-" + order;
+                                // zscene.add( meshShadow );
 
                                 var floorHeight = - 1.117 * image.height / 2;
                                 floor.position.y = floorHeight;
@@ -174,7 +179,6 @@
                     texturePainting1.minFilter = texturePainting1.magFilter = THREE.LinearFilter;
                     texturePainting1.mapping = THREE.UVMapping;
                 }
-                // paint(0)
 
 
                 var i;
@@ -219,10 +223,20 @@
                 // camera.position.x += ( mouseX - camera.position.x ) * .05;
 				// camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
                 // LOCKED = false;
+ 
+                closestImage();
 
-                imagesLookAtCamera(MAX_IMAGE);
-
-				if (distanceVector(camera.position, scene1.position) < 1500){
+                
+                let imagetoLookAt = closestImage();
+                console.log("image to look at: ", imagetoLookAt);
+                console.log("EXAMINE:" ,EXAMINE)
+                console.log(imagetoLookAt == EXAMINE )
+                if (imagetoLookAt != false && EXAMINE == true) {
+                    upCloseControls(imagetoLookAt);
+                }else {
+                    imagesLookAtCamera(MAX_IMAGE); 
+                    keyboardControls();
+                }
 					
 					// var q1 = new THREE.Quaternion().copy( camera.quaternion );
 					// var q2 = new THREE.Quaternion().copy( scene1.quaternion );
@@ -231,29 +245,87 @@
 					// time += dt;
 					// THREE.Quaternion.slerp( new THREE.Quaternion().copy( camera.quaternion ), new THREE.Quaternion().copy( scene1.quaternion ), camera.quaternion, time );
 
-					camera.position.x += ( mouseX - camera.position.x ) * .05;
-					camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
+					// camera.position.x += ( mouseX - camera.position.x ) * .05;
+					// camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
                     // camera.lookAt( scene1.position );
                     
-					if(LOCKED == false){
-						var q1 = new THREE.Quaternion().copy( camera.quaternion );
-						var q2 = new THREE.Quaternion().copy( scene1.quaternion );
-						console.log(q1.equals(q2))
+					// if(LOCKED == false{
+						// var q1 = new THREE.Quaternion().copy( camera.quaternion );
+						// var q2 = new THREE.Quaternion().copy( scene1.quaternion );
+						// console.log(q1.equals(q2))
 						
-						var dt=0.01; // changed
-						time += dt;
-						THREE.Quaternion.slerp( new THREE.Quaternion().copy( camera.quaternion ), new THREE.Quaternion().copy( scene1.quaternion ), camera.quaternion, time );
-						LOCKED = true;
-					} else{
-						camera.lookAt(scene1.position);
-					}
-				}
-				else{
-					LOCKED = false;
-				}
+						// var dt=0.01; // changed
+						// time += dt;
+						// THREE.Quaternion.slerp( new THREE.Quaternion().copy( camera.quaternion ), new THREE.Quaternion().copy( scene1.quaternion ), camera.quaternion, time );
+						// LOCKED = true;
+					// } else{
+					// 	camera.lookAt(scene1.position);
+					// }
+				
+				
 
-				// camera.lookAt( scene1.position );
-				if(keyboard[87]){ // W key
+				
+				mainControls();
+
+				renderer.clear();
+				renderer.render( scene1, camera );
+
+            }
+
+            function closestImage(){
+                var i;
+                let loc;
+                let minDistance = 1650;
+                let name;
+                let found = false
+                for (i  = 0; i <= MAX_IMAGE; i++){
+                    name = IMAGE_NAME + i;
+                    try {
+                        loc = IMAGE_POSITIONS[name];
+                        console.log(name, distanceVector(camera.position, loc))
+                        if (distanceVector(camera.position, loc) < minDistance){
+                            found = name;
+                        }
+                        if (i == MAX_IMAGE){
+                                return found;
+                        }
+                    }
+                    catch(err) {
+                        console.log("DOCUMENT HASNT LOADED")
+                    }
+
+                }
+
+
+            }
+
+            function upCloseControls(imageName) {
+                camera.position.x += ( mouseX - camera.position.x ) * .05;
+				camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
+                lookAtImage(imageName);
+            }
+
+            function lookAtImage(imageName) {
+                if (imagesLoaded()){
+                    console.log(imageName)
+                    camera.lookAt(scene1.getObjectByName( imageName ).position);
+                }
+            
+            }
+
+            function mainControls() {
+                if(keyboard[89]){ //Y
+					console.log(camera.position)
+					console.log(distanceVector(camera.position, scene1.position))
+                }
+                if(keyboard[32]){ //SPACE
+                    EXAMINE = !(EXAMINE);
+                    console.log("EXAMINE MODE: ",EXAMINE);
+                }
+            }
+
+            function keyboardControls() {
+                if(keyboard[87]){ // W key
                     camera.position.x -= Math.sin(camera.rotation.y) * player.speed;
                     camera.position.z -= Math.cos(camera.rotation.y) * player.speed;
                 }
@@ -269,26 +341,12 @@
                     camera.position.x -= Math.sin(camera.rotation.y - Math.PI/2) * player.speed;
                     camera.position.z -= Math.cos(camera.rotation.y - Math.PI/2) * player.speed;
 				}
-				
-
-                if(keyboard[89]){ //Y
-                    // console.log(camera.aspect);
-                    // camera.aspect += .01
-					// camera.updateProjectionMatrix()
-					console.log(camera.position)
-					console.log(zscene.position)
-					console.log(distanceVector(camera.position, scene1.position))
-                }
                 if(keyboard[37]){ // left arrow key
                     camera.rotation.y += player.turnSpeed;
                 }
                 if(keyboard[39]){ // right arrow key
                     camera.rotation.y -= player.turnSpeed;
                 }
-
-				renderer.clear();
-				renderer.render( scene1, camera );
-
             }
             
             function keyDown(event){
@@ -308,18 +366,22 @@
             }
             
             function imagesLookAtCamera(total) {
-                let imageName = "FILM-";
-                let backName = "BACK-"
-                let lastImage = imageName + total
-                if (scene1.getObjectByName( lastImage ) == undefined) {
-                    console.log("IMAGES NOT LOADED", lastImage)
-                } else{
+                if (imagesLoaded()) {
                     var i;
                     for (i  = 0; i < total; i++){
-                        scene1.getObjectByName( imageName + i ).lookAt(camera.position)
-                        scene1.getObjectByName( backName + i ).lookAt(camera.position)
+                        scene1.getObjectByName( IMAGE_NAME + i ).lookAt(camera.position)
+                        scene1.getObjectByName( BACK_NAME + i ).lookAt(camera.position)
                     }
+                } 
+            }
+
+            function imagesLoaded(){
+                let lastImage = IMAGE_NAME + MAX_IMAGE;
+                let loaded = scene1.getObjectByName( lastImage ) != undefined;
+                if (! (loaded)){
+                    console.log("IMAGES NOT LOADED", lastImage);
                 }
+                return loaded;
             }
 
             window.addEventListener('keydown', keyDown);

@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - materials - manual mipmaping</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+		<style>
+
+			.lbl { color:#fff; font-size:16px; font-weight:bold; position: absolute; bottom:0px; z-index:100; text-shadow:#000 1px 1px 1px; background-color:rgba(0,0,0,0.85); padding:1em }
+			#lbl_left { text-align:left; left:0px }
+			#lbl_right { text-align:left; right:0px }
+
+			.g { color:#aaa }
+			.c { color:#fa0 }
+
+		</style>
+	</head>
+
+	<body>
+	
+		<!-- <div id="lbl_left" class="lbl">
+		Floor <span class="g">(128x128)</span><br/>
+		mag: <span class="c">Linear</span><br/>
+		min: <span class="c">LinearMipmapLinear</span><br/>
+		<br/>
+		Painting <span class="g">(748x600)</span><br/>
+		mag: <span class="c">Linear</span><br/>
+		min: <span class="c">Linear</span>
+		</div>
+
+		<div id="lbl_right" class="lbl">
+		Floor <br/>
+		mag: <span class="c">Nearest</span><br/>
+		min: <span class="c">NearestMipmapNearestFilter</span><br/>
+		<br/>
+		Painting <br/>
+		mag: <span class="c">Nearest</span><br/>
+		min: <span class="c">Nearest</span>
+		</div> -->
+        <script src="node_modules\three\build\three.js"></script>
+		<script type="module">
+
+			
+
+			var SCREEN_WIDTH = window.innerWidth;
+			var SCREEN_HEIGHT = window.innerHeight;
+
+			var container;
+
+			var camera, scene1, scene2, renderer;
+
+			var LOCKED = false;
+			var mouseX = 0, mouseY = 0;
+			var time = 0;
+            var keyboard = {};
+            var player = { height:1.8, speed:10, turnSpeed:Math.PI*0.02 };
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			init();
+			animate();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 35, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
+				camera.position.z = 1500;
+
+				scene1 = new THREE.Scene();
+				scene1.background = new THREE.Color( 0x000000 );
+				scene1.fog = new THREE.Fog( 0x000000, 1500, 4000 );
+
+
+
+				// GROUND
+
+				function mipmap( size, color ) {
+
+					var imageCanvas = document.createElement( "canvas" ),
+						context = imageCanvas.getContext( "2d" );
+
+					imageCanvas.width = imageCanvas.height = size;
+
+					context.fillStyle = "#444";
+					context.fillRect( 0, 0, size, size );
+
+					context.fillStyle = color;
+					context.fillRect( 0, 0, size / 2, size / 2 );
+					context.fillRect( size / 2, size / 2, size / 2, size / 2 );
+					return imageCanvas;
+
+				}
+
+				var canvas = mipmap( 128, '#f00' );
+				var textureCanvas1 = new THREE.CanvasTexture( canvas );
+				textureCanvas1.mipmaps[ 0 ] = canvas;
+				textureCanvas1.mipmaps[ 1 ] = mipmap( 64, '#0f0' );
+				textureCanvas1.mipmaps[ 2 ] = mipmap( 32, '#00f' );
+				textureCanvas1.mipmaps[ 3 ] = mipmap( 16, '#400' );
+				textureCanvas1.mipmaps[ 4 ] = mipmap( 8, '#040' );
+				textureCanvas1.mipmaps[ 5 ] = mipmap( 4, '#004' );
+				textureCanvas1.mipmaps[ 6 ] = mipmap( 2, '#044' );
+				textureCanvas1.mipmaps[ 7 ] = mipmap( 1, '#404' );
+				textureCanvas1.repeat.set( 1000, 1000 );
+				textureCanvas1.wrapS = THREE.RepeatWrapping;
+				textureCanvas1.wrapT = THREE.RepeatWrapping;
+
+
+				var materialCanvas1 = new THREE.MeshBasicMaterial( { map: textureCanvas1 } );
+
+				var geometry = new THREE.PlaneBufferGeometry( 100, 100 );
+
+				var meshCanvas1 = new THREE.Mesh( geometry, materialCanvas1 );
+				meshCanvas1.rotation.x = - Math.PI / 2;
+				meshCanvas1.scale.set( 1000, 1000, 1000 );
+
+
+				// PAINTING
+
+				var callbackPainting = function () {
+					let HEIGHT_ABOVE_GROUND = 100;
+					var image = texturePainting1.image;
+
+					scene1.add( meshCanvas1 );
+
+					var geometry = new THREE.PlaneBufferGeometry( 100, 100 );
+					var mesh1 = new THREE.Mesh( geometry, materialPainting1 );
+
+					addPainting( scene1, mesh1 );
+
+					function addPainting( zscene, zmesh ) {
+
+						zmesh.scale.x = image.width / 100;
+						zmesh.scale.y = image.height / 100;
+						zmesh.position.y = HEIGHT_ABOVE_GROUND;
+
+						zscene.add( zmesh );
+
+						var meshFrame = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x000000 } ) );
+						meshFrame.position.z = - 10.0;
+						meshFrame.position.y = HEIGHT_ABOVE_GROUND;
+						meshFrame.scale.x = 1.1 * image.width / 100;
+						meshFrame.scale.y = 1.1 * image.height / 100;
+						zscene.add( meshFrame );
+
+						var meshShadow = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.75, transparent: true } ) );
+						meshShadow.position.y = - 1.1 * image.height / 2;
+						meshShadow.position.z = - 1.1 * image.height / 2;
+						meshShadow.rotation.x = - Math.PI / 2;
+						meshShadow.scale.x = 1.1 * image.width / 100;
+						meshShadow.scale.y = 1.1 * image.height / 100;
+						zscene.add( meshShadow );
+
+						var floorHeight = - 1.117 * image.height / 2;
+						meshCanvas1.position.y = floorHeight;
+
+					}
+
+
+				};
+
+				var texturePainting1 = new THREE.TextureLoader().load( "https://images.squarespace-cdn.com/content/v1/5b7ceb7f365f02bdf79beb6c/1535310994733-0ZJJ14WS0Z5NOML3ALPO/ke17ZwdGBToddI8pDm48kGPVK--wGoWXJsqwlxbZlQN7gQa3H78H3Y0txjaiv_0fDoOvxcdMmMKkDsyUqMSsMWxHk725yiiHCCLfrh8O1z4YTzHvnKhyp6Da-NYroOW3ZGjoBKy3azqku80C789l0mwONMR1ELp49Lyc52iWr5enfxu_O4VeONvneR-F6W8oeFhFqSrYyNrfPB9Y70_gvQ/18DF50A6-14B4-46BC-A7DF-3EF1A7AC9699.jpg", callbackPainting );
+				
+				var materialPainting1 = new THREE.MeshBasicMaterial( { color: 0xffffff, map: texturePainting1 } );
+
+				texturePainting1.minFilter = texturePainting1.magFilter = THREE.LinearFilter;
+				texturePainting1.mapping = THREE.UVMapping;
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+				renderer.autoClear = false;
+
+				renderer.domElement.style.position = "relative";
+				container.appendChild( renderer.domElement );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+			}
+
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = ( event.clientX - windowHalfX );
+				mouseY = ( event.clientY - windowHalfY );
+
+			}
+
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+                // if(keyboard[87]){ // W key
+                //     console.log(camera.position.x)
+                //     camera.position.x += Math.sin(camera.rotation.y) * player.speed;
+                //     camera.position.z += -Math.cos(camera.rotation.y) * player.speed;
+                // }
+                // if(keyboard[83]){ // S key
+                //     camera.position.x -= Math.sin(camera.rotation.y) * player.speed;
+                //     camera.position.z -= -Math.cos(camera.rotation.y) * player.speed;
+                // }
+                // if(keyboard[65]){ // A key
+                //     camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
+                //     camera.position.z += -Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
+                // }
+                // if(keyboard[68]){ // D key
+                //     camera.position.x += Math.sin(camera.rotation.y - Math.PI/2) * player.speed;
+                //     camera.position.z += -Math.cos(camera.rotation.y - Math.PI/2) * player.speed;
+                // }
+
+                // if(keyboard[89]){ //Y
+                //     console.log(camera.aspect);
+                //     camera.aspect += .01
+                //     camera.updateProjectionMatrix()
+                // }
+
+                // if(keyboard[72]){ //H
+                //     console.log(camera.aspect);
+                //     camera.aspect -= .01
+                //     camera.updateProjectionMatrix()
+                // }
+                
+                // if(keyboard[37]){ // left arrow key
+                //     camera.rotation.y -= player.turnSpeed;
+                // }
+                // if(keyboard[39]){ // right arrow key
+                //     camera.rotation.y += player.turnSpeed;
+                // }
+
+
+
+
+
+
+
+				render();
+
+			}
+
+			function render() {
+
+				// camera.position.x += ( mouseX - camera.position.x ) * .05;
+				// camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
+				// LOCKED = false;
+				
+				if (distanceVector(camera.position, scene1.position) < 1500){
+					
+					// var q1 = new THREE.Quaternion().copy( camera.quaternion );
+					// var q2 = new THREE.Quaternion().copy( scene1.quaternion );
+					// var time = 0;
+					// var dt=0.01; // changed
+					// time += dt;
+					// THREE.Quaternion.slerp( new THREE.Quaternion().copy( camera.quaternion ), new THREE.Quaternion().copy( scene1.quaternion ), camera.quaternion, time );
+
+					camera.position.x += ( mouseX - camera.position.x ) * .05;
+					camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
+					// camera.lookAt( scene1.position );
+
+					if(LOCKED == false){
+						var q1 = new THREE.Quaternion().copy( camera.quaternion );
+						var q2 = new THREE.Quaternion().copy( scene1.quaternion );
+						console.log(q1.equals(q2))
+						
+						var dt=0.01; // changed
+						time += dt;
+						THREE.Quaternion.slerp( new THREE.Quaternion().copy( camera.quaternion ), new THREE.Quaternion().copy( scene1.quaternion ), camera.quaternion, time );
+						LOCKED = true;
+						// console.log(q2)
+					} else{
+						console.log("HELLO");
+						camera.lookAt(scene1.position);
+					}
+				}
+				else{
+					LOCKED = false;
+				}
+
+				// camera.lookAt( scene1.position );
+				if(keyboard[87]){ // W key
+                    camera.position.x += Math.sin(camera.rotation.y) * player.speed;
+                    camera.position.z += -Math.cos(camera.rotation.y) * player.speed;
+                }
+                if(keyboard[83]){ // S key
+                    camera.position.x -= Math.sin(camera.rotation.y) * player.speed;
+                    camera.position.z -= -Math.cos(camera.rotation.y) * player.speed;
+                }
+                if(keyboard[65]){ // A key
+                    camera.position.x -= Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
+                    camera.position.z -= -Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
+                }
+                if(keyboard[68]){ // D key
+                    camera.position.x -= Math.sin(camera.rotation.y - Math.PI/2) * player.speed;
+                    camera.position.z -= -Math.cos(camera.rotation.y - Math.PI/2) * player.speed;
+				}
+				
+
+                if(keyboard[89]){ //Y
+                    // console.log(camera.aspect);
+                    // camera.aspect += .01
+					// camera.updateProjectionMatrix()
+					console.log(camera.position)
+					console.log(zscene.position)
+					console.log(distanceVector(camera.position, scene1.position))
+                }
+
+                if(keyboard[72]){ //H
+                    console.log(camera.aspect);
+                    camera.aspect -= .01
+                    camera.updateProjectionMatrix()
+                }
+                
+                if(keyboard[37]){ // left arrow key
+                    camera.rotation.y += player.turnSpeed;
+                }
+                if(keyboard[39]){ // right arrow key
+                    camera.rotation.y -= player.turnSpeed;
+                }
+
+				renderer.clear();
+				renderer.render( scene1, camera );
+
+            }
+            
+            function keyDown(event){
+                keyboard[event.keyCode] = true;
+            }
+
+            function keyUp(event){
+                keyboard[event.keyCode] = false;
+			}
+			
+			function distanceVector( v1, v2 ){
+				var dx = v1.x - v2.x;
+				var dy = v1.y - v2.y;
+				var dz = v1.z - v2.z;
+
+				return Math.sqrt( dx * dx + dy * dy + dz * dz );
+			}
+
+            window.addEventListener('keydown', keyDown);
+            window.addEventListener('keyup', keyUp);
+
+            
+
+		</script>
+
+	</body>
+</html>

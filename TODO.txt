@@ -1,0 +1,14 @@
+
+-keep track of all the images locations in a list
+
+-iterate over list to keep track of when you are near them
+
+- make them spread out.
+
+- look at an image when you are close
+
+- organize code
+
+-look at mouse code from the other gallery
+
+-  create zig sag pattern

@@ -21,8 +21,6 @@
 	<body>
         <audio controls muted src="audio\ES_RoundhouseValante.mp3" id="my_audio" loop="loop" autoplay="autoplay"></audio>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
-
-        <!-- <script src="node_modules\three\build\three.js"></script> -->
 		<script type="module">
 
 			
@@ -39,6 +37,7 @@
 			var time = 0;
             var keyboard = {};
             var player = { height:1.8, speed:10, turnSpeed:Math.PI*0.02 };
+            var MAX_IMAGE = 22;
 
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
@@ -179,8 +178,8 @@
 
 
                 var i;
-                for (i  = 0; i < 9; i++){
-                    // console.log(i)s
+                for (i  = 0; i <= MAX_IMAGE; i++){
+                    // console.log(i)
                     paint(i)
                 }
 
@@ -221,17 +220,7 @@
 				// camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
                 // LOCKED = false;
 
-
-                if (scene1.getObjectByName( "FILM-2" ) == undefined) {
-                    console.log("NOT LOADED")
-                } else{
-                    scene1.getObjectByName( "FILM-0" ).lookAt(camera.position)
-                    scene1.getObjectByName( "BACK-0" ).lookAt(camera.position)
-                    scene1.getObjectByName( "FILM-1" ).lookAt(camera.position)
-                    scene1.getObjectByName( "BACK-1" ).lookAt(camera.position)
-                    scene1.getObjectByName( "FILM-2" ).lookAt(camera.position)
-                    scene1.getObjectByName( "BACK-2" ).lookAt(camera.position)
-                }
+                imagesLookAtCamera(MAX_IMAGE);
 
 				if (distanceVector(camera.position, scene1.position) < 1500){
 					
@@ -290,13 +279,6 @@
 					console.log(zscene.position)
 					console.log(distanceVector(camera.position, scene1.position))
                 }
-
-                if(keyboard[72]){ //H
-                    console.log(camera.aspect);
-                    camera.aspect -= .01
-                    camera.updateProjectionMatrix()
-                }
-                
                 if(keyboard[37]){ // left arrow key
                     camera.rotation.y += player.turnSpeed;
                 }
@@ -323,7 +305,22 @@
 				var dz = v1.z - v2.z;
 
 				return Math.sqrt( dx * dx + dy * dy + dz * dz );
-			}
+            }
+            
+            function imagesLookAtCamera(total) {
+                let imageName = "FILM-";
+                let backName = "BACK-"
+                let lastImage = imageName + total
+                if (scene1.getObjectByName( lastImage ) == undefined) {
+                    console.log("IMAGES NOT LOADED", lastImage)
+                } else{
+                    var i;
+                    for (i  = 0; i < total; i++){
+                        scene1.getObjectByName( imageName + i ).lookAt(camera.position)
+                        scene1.getObjectByName( backName + i ).lookAt(camera.position)
+                    }
+                }
+            }
 
             window.addEventListener('keydown', keyDown);
             window.addEventListener('keyup', keyUp);

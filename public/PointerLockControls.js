@@ -19,7 +19,7 @@ var PointerLockControls = function ( camera, domElement ) {
 	}
 
 	this.domElement = domElement;
-	this.isLocked = true;
+	this.isLocked = false;
 
 	//
 	// internals

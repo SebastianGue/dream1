@@ -20,32 +20,53 @@
 
 	<body>
         <audio controls muted src="audio\ES_RoundhouseValante.mp3" id="my_audio" loop="loop" autoplay="autoplay"></audio>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script> -->
+        <!-- <script type="module" src="PointerLockControls.js"></script> -->
 		<script type="module">
+
+            // import { PointerLockControls } from './PointerLockControls.js';
+            import * as THREE from '../three/build/three.module.js';
+            import { PointerLockControls } from './PointerLockControls.js';
+            var moveForward = false;
+			var moveBackward = false;
+			var moveLeft = false;
+			var moveRight = false;
+            var canJump = false;
+            var raycaster;
+			var prevTime = performance.now();
+			var velocity = new THREE.Vector3();
+			var direction = new THREE.Vector3();
+			var vertex = new THREE.Vector3();
 
 			
 
 			var SCREEN_WIDTH = window.innerWidth;
 			var SCREEN_HEIGHT = window.innerHeight;
 
-			var container;
+            var container;
 
-			var camera, scene1, scene2, renderer, light, ambientLight;
 
+
+			var camera, scene1, scene2, renderer, light, ambientLight, controls;
 			var LOCKED = false;
             var mouseX = 0, mouseY = 0;
-            var trackerX = {"tracked": false,
-                            "position": 0 
+            var trackerX = {"tracked": true,
+                            "position": 0 ,
+                            "quaternion1": undefined,
+                            "quaternion2": undefined
                         };
 			var time = 0;
             var keyboard = {};
-            var player = { height:1.8, speed:10, turnSpeed:Math.PI*0.02 };
+            var objects = [];
+            var player = { height:1.8, speed:10, turnSpeed:Math.PI*0.005 };
             var MAX_IMAGE = 22;
             var IMAGE_POSITIONS = {};
             let IMAGE_NAME = "FILM-";
             let BACK_NAME = "BACK-";
             let EXAMINE = false;
+            var CAMERA_TRANSITION = false;
             var imagetoLookAt = false;
+            var time = 0;
 
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
@@ -64,9 +85,11 @@
 
 				scene1 = new THREE.Scene();
 				scene1.background = new THREE.Color( 0x000000 );
-				scene1.fog = new THREE.Fog( 0x000000, 1500, 4000 );
-
-
+                scene1.fog = new THREE.Fog( 0x000000, 1500, 4000 );
+                controls = new PointerLockControls( camera, document.body );
+                console.log(controls.isLocked)
+                scene1.add( controls.getObject() );
+                raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
 
 				// GROUND
 
@@ -158,16 +181,6 @@
                                 meshFrame.name = "BACK-" + order;
                                 zscene.add( meshFrame );
 
-                                // var meshShadow = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0x000000, opacity: 0.75, transparent: true } ) );
-                                // meshShadow.position.y = - 1.1 * image.height / 2;
-                                // meshShadow.position.z = - 1.1 * image.height / 2;
-                                // meshShadow.rotation.x = - Math.PI / 2;
-                                // meshShadow.scale.x = 1.1 * image.width / 100;
-                                // meshShadow.scale.y = 1.1 * image.height / 100;
-                                // meshShadow.position.x += 1000*order;
-                                // meshShadow.position.z -= 1000*order;
-                                // meshShadow.name = "SHA-" + order;
-                                // zscene.add( meshShadow );
 
                                 var floorHeight = - 1.117 * image.height / 2;
                                 floor.position.y = floorHeight;
@@ -223,47 +236,100 @@
 			}
 
 			function render() {
+                imagesLookAtCamera(MAX_IMAGE);
+                console.log(controls.isLocked)
+                if ( controls.isLocked === true ) {
 
-                // camera.position.x += ( mouseX - camera.position.x ) * .05;
-				// camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
-                // LOCKED = false;
-                if (EXAMINE == false){ 
-                    imagetoLookAt = closestImage();
+                    raycaster.ray.origin.copy( controls.getObject().position );
+                    raycaster.ray.origin.y -= 10;
+
+                    var intersections = raycaster.intersectObjects( objects );
+
+                    var onObject = intersections.length > 0;
+
+                    var time = performance.now();
+                    var delta = ( time - prevTime ) / 100;
+
+                    velocity.x -= velocity.x * 10.0 * delta;
+                    velocity.z -= velocity.z * 10.0 * delta;
+
+                    velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+
+                    direction.z = Number( moveForward ) - Number( moveBackward );
+                    direction.x = Number( moveRight ) - Number( moveLeft );
+                    direction.normalize(); // this ensures consistent movements in all directions
+
+                if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
+                if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+
+                if ( onObject === true ) {
+
+                    velocity.y = Math.max( 0, velocity.y );
+                    canJump = true;
+
                 }
 
-                console.log("image to look at: ", imagetoLookAt);
-                if (imagetoLookAt != false && EXAMINE == true) {
-                    upCloseControls(imagetoLookAt);
-                }else {
-                    imagesLookAtCamera(MAX_IMAGE); 
-                    keyboardControls();
-                }
-					
-					// var q1 = new THREE.Quaternion().copy( camera.quaternion );
-					// var q2 = new THREE.Quaternion().copy( scene1.quaternion );
-					// var time = 0;
-					// var dt=0.01; // changed
-					// time += dt;
-					// THREE.Quaternion.slerp( new THREE.Quaternion().copy( camera.quaternion ), new THREE.Quaternion().copy( scene1.quaternion ), camera.quaternion, time );
+                controls.moveRight( - velocity.x * delta );
+                controls.moveForward( - velocity.z * delta );
 
-					// camera.position.x += ( mouseX - camera.position.x ) * .05;
-					// camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
-                    // camera.lookAt( scene1.position );
-                    
-					// if(LOCKED == false{
-						// var q1 = new THREE.Quaternion().copy( camera.quaternion );
-						// var q2 = new THREE.Quaternion().copy( scene1.quaternion );
-						// console.log(q1.equals(q2))
-						
-						// var dt=0.01; // changed
-						// time += dt;
-						// THREE.Quaternion.slerp( new THREE.Quaternion().copy( camera.quaternion ), new THREE.Quaternion().copy( scene1.quaternion ), camera.quaternion, time );
-						// LOCKED = true;
-					// } else{
-					// 	camera.lookAt(scene1.position);
-					// }
-				
-				
+                controls.getObject().position.y += ( velocity.y * delta ); // new behavior
+
+                if ( controls.getObject().position.y < 10 ) {
+
+                    velocity.y = 0;
+                    controls.getObject().position.y = 10;
+
+                    canJump = true;
+
+                }
+
+                prevTime = time;
+
+                }
+
+
+
+
+
+                // if (EXAMINE == false){ 
+                //     imagetoLookAt = closestImage();
+                // }
+
+                // if (imagetoLookAt != false && EXAMINE == true) {
+                //     upCloseControls(imagetoLookAt);
+                // } else {
+                //     if (CAMERA_TRANSITION) {
+                //         var dt = .01;
+                //         var dy = 10;
+                //         var dx = 15;
+                //         dy = Math.abs(100 - camera.position.y) / 40
+                //         dx = Math.abs(camera.position.x - trackerX["position"]) / 40
+                //         time+= dt;
+                //         imagesLookAtCamera(MAX_IMAGE); 
+                //         console.log(time)
+                //         THREE.Quaternion.slerp( trackerX["quaternion2"], trackerX["quaternion1"], camera.quaternion, time ); 
+                //         if (camera.position.y > 100) {
+                //             camera.position.y -= dy
+                //         }  else {
+                //             camera.position.y += dy
+                //         }
+                //         if (camera.position.x > trackerX["position"]) {
+                //             camera.position.x -= dx
+                //         }  else {
+                //             camera.position.x += dx
+                //         }
+                //         if (time > .4){
+                //             time = 0;
+                //             CAMERA_TRANSITION = false;
+                //         };
+                //     } else{
+                //         imagesLookAtCamera(MAX_IMAGE); 
+                //         keyboardControls();
+                    // }
+                    // imagesLookAtCamera(MAX_IMAGE); 
+                    // keyboardControls();
+                // }
+
 
 				
 				// mainControls();
@@ -271,7 +337,7 @@
 				renderer.clear();
 				renderer.render( scene1, camera );
 
-            }
+            }   
 
             function closestImage(){
                 var i;
@@ -283,9 +349,7 @@
                     name = IMAGE_NAME + i;
                     try {
                         loc = IMAGE_POSITIONS[name];
-                        // console.log(name, distanceVector(camera.position, loc))
                         if (distanceVector(camera.position, loc) < minDistance){
-                            // console.log(name, distanceVector(camera.position, loc))
                             found = name;
                         }
                         if (i == MAX_IMAGE){
@@ -304,10 +368,11 @@
             function upCloseControls(imageName) {
                 if(trackerX["tracked"] == false) {
                     trackerX["position"] = camera.position.x;
+                    trackerX["quaternion1"] = new THREE.Quaternion().copy( camera.quaternion );
                     trackerX["tracked"] = true;
+                    CAMERA_TRANSITION = false;
                 }
-
-                console.log(( mouseX - camera.position.x ) * .05) 
+                console.log(CAMERA_TRANSITION)
                 camera.position.x += (( mouseX - (camera.position.x - IMAGE_POSITIONS[imageName].x)) * .05) ;
                 camera.position.y += ( - ( mouseY - 200 ) - (camera.position.y - 100)) * .05;
                 // console.log(camera.position.x, camera.position.y)
@@ -347,19 +412,74 @@
                 }
             }
             
-            function keyDown(event){
+            function onKeyDown(event){
+                switch ( event.keyCode ) {
+
+                    case 38: // up
+                    case 87: // w
+                        moveForward = true;
+                        break;
+
+                    case 37: // left
+                    case 65: // a
+                        moveLeft = true;
+                        break;
+
+                    case 40: // down
+                    case 83: // s
+                        moveBackward = true;
+                        break;
+
+                    case 39: // right
+                    case 68: // d
+                        moveRight = true;
+                        break;
+
+                    case 32: // space
+                        if ( canJump === true ) velocity.y += 350;
+                        canJump = false;
+                        break;
+
+                }
                 keyboard[event.keyCode] = true;
             }
 
-            function keyUp(event){
+            function onKeyUp(event){
+
+                switch ( event.keyCode ) {
+
+                    case 38: // up
+                    case 87: // w
+                        moveForward = false;
+                        break;
+
+                    case 37: // left
+                    case 65: // a
+                        moveLeft = false;
+                        break;
+
+                    case 40: // down
+                    case 83: // s
+                        moveBackward = false;
+                        break;
+
+                    case 39: // right
+                    case 68: // d
+                        moveRight = false;
+                        break;
+
+                }
                 if(keyboard[89]){ //Y
                     console.log("CAMERA POSITION: ",camera.position);
                     console.log(mouseX, mouseY)
                     console.log("TRACKER X: ", trackerX);
                     console.log(scene1.getObjectByName( "FILM-1").position)
+                    console.log("CAMERA TRANSITION: ", CAMERA_TRANSITION)
                 }
                 if(keyboard[32]){ //SPACE
+                    trackerX["quaternion2"] = new THREE.Quaternion().copy( camera.quaternion );
                     EXAMINE = !(EXAMINE);
+                    CAMERA_TRANSITION = !(CAMERA_TRANSITION)
                     trackerX["tracked"] = !(trackerX["tracked"]);
                     console.log("EXAMINE MODE: ",EXAMINE);
                 }
@@ -393,8 +513,12 @@
                 return loaded;
             }
 
-            window.addEventListener('keydown', keyDown);
-            window.addEventListener('keyup', keyUp);
+            
+
+            // window.addEventListener('keydown', keyDown);
+            // window.addEventListener('keyup', keyUp);
+            document.addEventListener( 'keydown', onKeyDown, false );
+			document.addEventListener( 'keyup', onKeyUp, false );
 
             window.onload=function(){
             document.getElementById("my_audio").play();

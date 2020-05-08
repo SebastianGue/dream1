@@ -7,7 +7,7 @@ import {
 	Euler,
 	EventDispatcher,
 	Vector3
-} from "../../../build/three.module.js";
+} from "./node_modules/three/build/three.module.js";
 
 var PointerLockControls = function ( camera, domElement ) {
 
@@ -19,7 +19,7 @@ var PointerLockControls = function ( camera, domElement ) {
 	}
 
 	this.domElement = domElement;
-	this.isLocked = false;
+	this.isLocked = true;
 
 	//
 	// internals

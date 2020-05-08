@@ -33,7 +33,10 @@
 			var camera, scene1, scene2, renderer, light, ambientLight;
 
 			var LOCKED = false;
-			var mouseX = 0, mouseY = 0;
+            var mouseX = 0, mouseY = 0;
+            var trackerX = {"tracked": false,
+                            "position": 0 
+                        };
 			var time = 0;
             var keyboard = {};
             var player = { height:1.8, speed:10, turnSpeed:Math.PI*0.02 };
@@ -42,6 +45,7 @@
             let IMAGE_NAME = "FILM-";
             let BACK_NAME = "BACK-";
             let EXAMINE = false;
+            var imagetoLookAt = false;
 
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
@@ -56,7 +60,7 @@
 				document.body.appendChild( container );
 
 				camera = new THREE.PerspectiveCamera( 35, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
-				camera.position.z = 1500;
+                camera.position.z = 1500;
 
 				scene1 = new THREE.Scene();
 				scene1.background = new THREE.Color( 0x000000 );
@@ -116,7 +120,7 @@
                 light.castShadow = true;
                 // Will not light anything closer than 0.1 units or further than 25 units
                 light.shadow.camera.near = 0.1;
-                light.shadow.camera.far = 25;
+                light.shadow.camera.far = 600;
                 scene1.add(light);
 
 				// PAINTING
@@ -135,7 +139,7 @@
                             function addPainting( zscene, zmesh ) {
                                 
                                 zmesh.position.x += 1500*order;
-                                zmesh.position.z -= 1500*order;
+                                zmesh.position.z -= 1900*order;
                                 zmesh.scale.x = image.width / 100;
                                 zmesh.scale.y = image.height / 100;
                                 zmesh.position.y = HEIGHT_ABOVE_GROUND;
@@ -150,7 +154,7 @@
                                 meshFrame.scale.x = 1.1 * image.width / 100;
                                 meshFrame.scale.y = 1.1 * image.height / 100;
                                 meshFrame.position.x += 1500*order;
-                                meshFrame.position.z -= 1500*order;
+                                meshFrame.position.z -= 1900*order;
                                 meshFrame.name = "BACK-" + order;
                                 zscene.add( meshFrame );
 
@@ -223,14 +227,11 @@
                 // camera.position.x += ( mouseX - camera.position.x ) * .05;
 				// camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
                 // LOCKED = false;
- 
-                closestImage();
+                if (EXAMINE == false){ 
+                    imagetoLookAt = closestImage();
+                }
 
-                
-                let imagetoLookAt = closestImage();
                 console.log("image to look at: ", imagetoLookAt);
-                console.log("EXAMINE:" ,EXAMINE)
-                console.log(imagetoLookAt == EXAMINE )
                 if (imagetoLookAt != false && EXAMINE == true) {
                     upCloseControls(imagetoLookAt);
                 }else {
@@ -265,7 +266,7 @@
 				
 
 				
-				mainControls();
+				// mainControls();
 
 				renderer.clear();
 				renderer.render( scene1, camera );
@@ -277,17 +278,18 @@
                 let loc;
                 let minDistance = 1650;
                 let name;
-                let found = false
+                let found = false;
                 for (i  = 0; i <= MAX_IMAGE; i++){
                     name = IMAGE_NAME + i;
                     try {
                         loc = IMAGE_POSITIONS[name];
-                        console.log(name, distanceVector(camera.position, loc))
+                        // console.log(name, distanceVector(camera.position, loc))
                         if (distanceVector(camera.position, loc) < minDistance){
+                            // console.log(name, distanceVector(camera.position, loc))
                             found = name;
                         }
                         if (i == MAX_IMAGE){
-                                return found;
+                            return found;
                         }
                     }
                     catch(err) {
@@ -300,29 +302,25 @@
             }
 
             function upCloseControls(imageName) {
-                camera.position.x += ( mouseX - camera.position.x ) * .05;
-				camera.position.y += ( - ( mouseY - 200 ) - camera.position.y ) * .05;
+                if(trackerX["tracked"] == false) {
+                    trackerX["position"] = camera.position.x;
+                    trackerX["tracked"] = true;
+                }
+
+                console.log(( mouseX - camera.position.x ) * .05) 
+                camera.position.x += (( mouseX - (camera.position.x - IMAGE_POSITIONS[imageName].x)) * .05) ;
+                camera.position.y += ( - ( mouseY - 200 ) - (camera.position.y - 100)) * .05;
+                // console.log(camera.position.x, camera.position.y)
                 lookAtImage(imageName);
             }
 
             function lookAtImage(imageName) {
                 if (imagesLoaded()){
-                    console.log(imageName)
                     camera.lookAt(scene1.getObjectByName( imageName ).position);
                 }
             
             }
 
-            function mainControls() {
-                if(keyboard[89]){ //Y
-					console.log(camera.position)
-					console.log(distanceVector(camera.position, scene1.position))
-                }
-                if(keyboard[32]){ //SPACE
-                    EXAMINE = !(EXAMINE);
-                    console.log("EXAMINE MODE: ",EXAMINE);
-                }
-            }
 
             function keyboardControls() {
                 if(keyboard[87]){ // W key
@@ -354,6 +352,17 @@
             }
 
             function keyUp(event){
+                if(keyboard[89]){ //Y
+                    console.log("CAMERA POSITION: ",camera.position);
+                    console.log(mouseX, mouseY)
+                    console.log("TRACKER X: ", trackerX);
+                    console.log(scene1.getObjectByName( "FILM-1").position)
+                }
+                if(keyboard[32]){ //SPACE
+                    EXAMINE = !(EXAMINE);
+                    trackerX["tracked"] = !(trackerX["tracked"]);
+                    console.log("EXAMINE MODE: ",EXAMINE);
+                }
                 keyboard[event.keyCode] = false;
 			}
 			

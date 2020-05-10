@@ -84,7 +84,13 @@
 			var prevTime = performance.now();
 			var velocity = new THREE.Vector3();
 			var direction = new THREE.Vector3();
-			var vertex = new THREE.Vector3();
+            var vertex = new THREE.Vector3();
+            var parameters = {
+                    distance: 400,
+                    inclination: 0.482,
+                    azimuth: 0.124
+                };
+            var updateSun;
 
 			
 
@@ -107,7 +113,7 @@
             var keyboard = {};
             var objects = [];
             var player = { height:1.8, speed:10, turnSpeed:Math.PI*0.005 };
-            var MAX_IMAGE = 22;
+            var MAX_IMAGE = 28;
             var IMAGE_POSITIONS = {};
             let IMAGE_NAME = "FILM-";
             let BACK_NAME = "BACK-";
@@ -128,14 +134,13 @@
 				// container = document.createElement( 'div' );
 				// document.body.appendChild( container );
 
-				camera = new THREE.PerspectiveCamera( 35, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 5000 );
+				camera = new THREE.PerspectiveCamera( 35, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 12300 );
                 camera.position.z = 1500;
 
 				scene1 = new THREE.Scene();
 				scene1.background = new THREE.Color( 0x000000 );
                 scene1.fog = new THREE.Fog( 0x000000, 1500, 4000 );
                 controls = new PointerLockControls( camera, document.body );
-                console.log(controls.isLocked)
 
                 var blocker = document.getElementById( 'blocker' );
 				var instructions = document.getElementById( 'instructions' );
@@ -212,11 +217,10 @@
                 scene1.add(ambientLight);
                 
                 light = new THREE.PointLight(0xffffff, 0.8);
-                // light.position.set(-110,210,1000);
                 light.castShadow = true;
                 // Will not light anything closer than 0.1 units or further than 25 units
                 light.shadow.camera.near = 0.1;
-                light.shadow.camera.far = 5000;
+                light.shadow.camera.far = 12300;
                 scene1.add(light);
 
                 //WATER
@@ -257,12 +261,10 @@
                 uniforms[ 'luminance' ].value = 1;
                 uniforms[ 'mieCoefficient' ].value = 0.005;
                 uniforms[ 'mieDirectionalG' ].value = 0.8;
+                //.254
+                //inclination = .5
 
-                var parameters = {
-                    distance: 400,
-                    inclination: 0.5,
-                    azimuth: 0.205
-                };
+                
                 var cubeCamera = new THREE.CubeCamera( 0.1, 1, 512 );
 				cubeCamera.renderTarget.texture.generateMipmaps = true;
 				cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -284,9 +286,22 @@
                             addPainting( scene1, mesh1 );
 
                             function addPainting( zscene, zmesh ) {
-                                
-                                zmesh.position.x += 1500*order;
-                                zmesh.position.z -= 1900*order;
+
+                                let isLEFT = (order % 2) == 0;
+                                let APART = 1000;
+                                let constantX = 1500;
+                                let constantZ = 1400;
+                                if (isLEFT) {
+                                    var X = -APART; 
+                                } else {
+                                    var X = APART;
+                                }
+                                var Z = (order * constantZ  + APART);
+                                // zmesh.position.x += constantX * order;
+                                zmesh.position.x += X;
+                                // zmesh.position.z -= constantZ * order;
+                                zmesh.position.z -= Z;
+                                // console.log("Z: ", Z);
                                 zmesh.scale.x = image.width / 100;
                                 zmesh.scale.y = image.height / 100;
                                 zmesh.position.y = HEIGHT_ABOVE_GROUND;
@@ -300,8 +315,10 @@
                                 meshFrame.position.y = HEIGHT_ABOVE_GROUND;
                                 meshFrame.scale.x = 1.1 * image.width / 100;
                                 meshFrame.scale.y = 1.1 * image.height / 100;
-                                meshFrame.position.x += 1500*order;
-                                meshFrame.position.z -= 1900*order;
+                                // meshFrame.position.x += constantX * order;
+                                meshFrame.position.x += X;
+                                // meshFrame.position.z -= constantZ * order;
+                                meshFrame.position.z -= Z;
                                 meshFrame.name = "BACK-" + order;
                                 zscene.add( meshFrame );
 
@@ -325,7 +342,6 @@
 
                 var i;
                 for (i  = 0; i <= MAX_IMAGE; i++){
-                    // console.log(i)
                     paint(i)
                 }
 
@@ -334,7 +350,7 @@
 				renderer.setPixelRatio( window.devicePixelRatio );
                 renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
                 
-                function updateSun() {
+                updateSun = function() {
 
                     var theta = Math.PI * ( parameters.inclination - 0.5 );
                     var phi = 2 * Math.PI * ( parameters.azimuth - 0.5 );
@@ -351,11 +367,9 @@
                 }
 
                 updateSun();
-				renderer.autoClear = false;
-
-				// renderer.domElement.style.position = "relative";
+                renderer.autoClear = false;
+                
 				document.body.appendChild( renderer.domElement );
-
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
 			}
@@ -382,11 +396,27 @@
                 water.material.uniforms[ 'time' ].value += 1.0 / 60.0;
                 water.material.uniforms['size'].value = .5;
                 water.material.uniforms['distortionScale'].value = 25;
-                // sky.material.uniforms['inclination'].value = .5;
+                // updateSun()
+                let lastZ = -40200;
+                let lastInclination = .5; 
+                let firstInclination = .45;
+                let lastAzimuth = .22; 
+                let firstAzimuth = .13;
+                let lastZratio = camera.position.z / lastZ;
+                console.log((lastZratio*(lastInclination - firstInclination)) + firstInclination);
+                console.log("Z: ", camera.position.z)
+                console.log(parameters['inclination'])
+                if (camera.position.z <= 0) {
+                    parameters['inclination'] = (lastZratio*(lastInclination - firstInclination)) + firstInclination;
+                    parameters['azimuth'] = (lastZratio*(lastInclination - firstAzimuth)) + firstAzimuth ;
+                    updateSun();
+                }
+
+
+                // parameters['inclination'] = .5;
                 // sky.material.uniforms['azimuth'].value = 1;
-                console.log()
-                imagesLookAtCamera(MAX_IMAGE);
-                console.log(controls.isLocked)
+                // imagesLookAtCamera(MAX_IMAGE);
+                //controsl for auto aim
                 if ( controls.isLocked === true ) {
 
                     raycaster.ray.origin.copy( controls.getObject().position );
@@ -437,52 +467,6 @@
                 }
 
 
-
-
-
-                // if (EXAMINE == false){ 
-                //     imagetoLookAt = closestImage();
-                // }
-
-                // if (imagetoLookAt != false && EXAMINE == true) {
-                //     upCloseControls(imagetoLookAt);
-                // } else {
-                //     if (CAMERA_TRANSITION) {
-                //         var dt = .01;
-                //         var dy = 10;
-                //         var dx = 15;
-                //         dy = Math.abs(100 - camera.position.y) / 40
-                //         dx = Math.abs(camera.position.x - trackerX["position"]) / 40
-                //         time+= dt;
-                //         imagesLookAtCamera(MAX_IMAGE); 
-                //         console.log(time)
-                //         THREE.Quaternion.slerp( trackerX["quaternion2"], trackerX["quaternion1"], camera.quaternion, time ); 
-                //         if (camera.position.y > 100) {
-                //             camera.position.y -= dy
-                //         }  else {
-                //             camera.position.y += dy
-                //         }
-                //         if (camera.position.x > trackerX["position"]) {
-                //             camera.position.x -= dx
-                //         }  else {
-                //             camera.position.x += dx
-                //         }
-                //         if (time > .4){
-                //             time = 0;
-                //             CAMERA_TRANSITION = false;
-                //         };
-                //     } else{
-                //         imagesLookAtCamera(MAX_IMAGE); 
-                //         keyboardControls();
-                    // }
-                    // imagesLookAtCamera(MAX_IMAGE); 
-                    // keyboardControls();
-                // }
-
-
-				
-				// mainControls();
-
 				renderer.clear();
 				renderer.render( scene1, camera );
 
@@ -524,7 +508,6 @@
                 console.log(CAMERA_TRANSITION)
                 camera.position.x += (( mouseX - (camera.position.x - IMAGE_POSITIONS[imageName].x)) * .05) ;
                 camera.position.y += ( - ( mouseY - 200 ) - (camera.position.y - 100)) * .05;
-                // console.log(camera.position.x, camera.position.y)
                 lookAtImage(imageName);
             }
 
@@ -634,7 +617,9 @@
                 }
                 keyboard[event.keyCode] = false;
 			}
-			
+            
+            
+            //DISTANCES BETWEEN TWO VECTOS
 			function distanceVector( v1, v2 ){
 				var dx = v1.x - v2.x;
 				var dy = v1.y - v2.y;
@@ -643,6 +628,7 @@
 				return Math.sqrt( dx * dx + dy * dy + dz * dz );
             }
             
+            //GETS ALL THE IMAGES AND MAKES THEM FACE THE CAMERA
             function imagesLookAtCamera(total) {
                 if (imagesLoaded()) {
                     var i;
@@ -652,7 +638,7 @@
                     }
                 } 
             }
-
+            //CHECKS WEATHER THE LAST IMAGE IS LOADED ONTO THE SCENE
             function imagesLoaded(){
                 let lastImage = IMAGE_NAME + MAX_IMAGE;
                 let loaded = scene1.getObjectByName( lastImage ) != undefined;
@@ -663,14 +649,11 @@
             }
 
             
-
-            // window.addEventListener('keydown', keyDown);
-            // window.addEventListener('keyup', keyUp);
             document.addEventListener( 'keydown', onKeyDown, false );
 			document.addEventListener( 'keyup', onKeyUp, false );
 
             window.onload=function(){
-            document.getElementById("my_audio").play();
+                 document.getElementById("my_audio").play();
             }
 
 		</script>

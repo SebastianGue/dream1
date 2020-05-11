@@ -23,7 +23,7 @@ import {
 	Vector3,
 	Vector4,
 	WebGLRenderTarget
-} from "./node_modules/three/build/three.module.js";
+} from "./node_module/three/build/three.module.js";
 
 var Water = function ( geometry, options ) {
 

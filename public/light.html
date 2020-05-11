@@ -54,15 +54,23 @@
 	</head>
 
 	<body>
-            <audio controls muted src="audio\ES_RoundhouseValante.mp3" id="my_audio" loop="loop" autoplay="autoplay"></audio>
+            <!-- <audio controls muted src="audio\ES_RoundhouseValante.mp3" id="my_audio" loop="loop" autoplay="autoplay"></audio> -->
             <div id="blocker">
 
                 <div id="instructions">
-                    <span style="font-size:36px">Click to play</span>
+                    <span style="font-size:48px">NOT TO LONG AGO</span><br/>
+                    <span style="font-size:12px">By Sebastián Guerrero Cárdenas</span><br/><br/><br/><br/>
+                    <span style="font-size:24px;color: rgb(255, 75, 75);">Click to begin.</span>
                     <br /><br />
-                    Move: WASD<br/>
+                    Move: W A S D<br/>
                     Jump: SPACE<br/>
-                    Look: MOUSE
+                    Look: MOUSE<br/>
+                    Exit: ESC<br/>
+                    <br/>
+                    <span style="font-size:18px">For optimal experience, unmute and enjoy the tunes</span><br/>
+                    <audio controls muted src="audio\ES_Pillow Cases - Guustavv.mp3" id="my_audio" loop="loop" autoplay="autoplay"></audio><br/>
+                    <span style="font-size:12px">ES_Pillow Cases - Guustavv</span>
+                    <!-- SOURCE: https://www.epidemicsound.com/track/1QpyhPq7Uo -->
                 </div>
     
             </div>
@@ -71,6 +79,7 @@
 		<script type="module">
 
             import * as THREE from '../three/build/three.module.js';
+            // import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js';
             import { PointerLockControls } from './PointerLockControls.js';
             import { Water } from './Water.js';
             import { Sky } from './Sky.js';
@@ -87,8 +96,8 @@
             var vertex = new THREE.Vector3();
             var parameters = {
                     distance: 400,
-                    inclination: 0.482,
-                    azimuth: 0.124
+                    inclination: 0.45,
+                    azimuth: 0.13
                 };
             var updateSun;
 
@@ -152,7 +161,6 @@
 				}, false );
 
 				controls.addEventListener( 'lock', function () {
-                    console.log("asdfasdfasdfasasdfasdf")
 					instructions.style.display = 'none';
 					blocker.style.display = 'none';
 
@@ -403,9 +411,9 @@
                 let lastAzimuth = .22; 
                 let firstAzimuth = .13;
                 let lastZratio = camera.position.z / lastZ;
-                console.log((lastZratio*(lastInclination - firstInclination)) + firstInclination);
-                console.log("Z: ", camera.position.z)
-                console.log(parameters['inclination'])
+                // console.log((lastZratio*(lastInclination - firstInclination)) + firstInclination);
+                // console.log("Z: ", camera.position.z)
+                // console.log(parameters['inclination'])
                 if (camera.position.z <= 0) {
                     parameters['inclination'] = (lastZratio*(lastInclination - firstInclination)) + firstInclination;
                     parameters['azimuth'] = (lastZratio*(lastInclination - firstAzimuth)) + firstAzimuth ;
@@ -415,7 +423,7 @@
 
                 // parameters['inclination'] = .5;
                 // sky.material.uniforms['azimuth'].value = 1;
-                // imagesLookAtCamera(MAX_IMAGE);
+                imagesLookAtCamera(MAX_IMAGE);
                 //controsl for auto aim
                 if ( controls.isLocked === true ) {
 

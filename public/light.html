@@ -228,7 +228,7 @@
                 light = new THREE.PointLight(0xffffff, 0.8);
                 light.castShadow = true;
                 // Will not light anything closer than 0.1 units or further than 25 units
-                light.shadow.camera.near = 0.1;
+                light.shadow.camera.near = 1;
                 light.shadow.camera.far = 12300;
                 scene1.add(light);
 
@@ -435,11 +435,18 @@
 
                     var onObject = intersections.length > 0;
 
-                    var time = performance.now();
-                    var delta = ( time - prevTime ) / 100;
-
+                    var time = performance.now();  
+                    
+                    // var delta = ( time - prevTime ) / 100;
+                    if ((( time - prevTime ) / 100) > .3){
+                        console.log("prevtime: ", prevTime)
+                        console.log("time: ", time)
+                        console.log("delta: ",( time - prevTime ) / 100)
+                        delta = .2;
+                    }
+                    delta = .12
                     velocity.x -= velocity.x * 10.0 * delta;
-                    velocity.z -= velocity.z * 10.0 * delta;
+                    velocity.z -= velocity.z * 10.0 * delta ;
 
                     velocity.y -= 9.8 * 20.0 * delta; // 100.0 = mass
 
@@ -472,7 +479,7 @@
                 }
 
                 prevTime = time;
-
+              
                 }
 
 

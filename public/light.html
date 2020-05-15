@@ -89,12 +89,9 @@
                 </div>
     
             </div>
-        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script> -->
-        <!-- <script type="module" src="PointerLockControls.js"></script> -->
+
 		<script type="module">
 
-            // import * as THREE from '../three/build/three.module.js';
-            // import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js';
             import * as THREE from './node_module/three/build/three.module.js';
             import { PointerLockControls } from './PointerLockControls.js';
             import { Water } from './Water.js';
@@ -236,13 +233,11 @@
                 floor.receiveShadow = true;
                 // scene1.add( floor );
 
-                // ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
                 var ambientLight = new THREE.HemisphereLight( 0xeeeeff, 0x777788, 0.75 );
                 scene1.add(ambientLight);
                 
                 light = new THREE.PointLight(0xffffff, 0.8);
                 light.castShadow = true;
-                // Will not light anything closer than 0.1 units or further than 25 units
                 light.shadow.camera.near = 1;
                 light.shadow.camera.far = 12300;
                 scene1.add(light);
@@ -321,9 +316,7 @@
                                     var X = APART;
                                 }
                                 var Z = (order * constantZ  + APART);
-                                // zmesh.position.x += constantX * order;
                                 zmesh.position.x += X;
-                                // zmesh.position.z -= constantZ * order;
                                 zmesh.position.z -= Z;
                                 // console.log("Z: ", Z);
                                 zmesh.scale.x = image.width / 100;
@@ -339,9 +332,7 @@
                                 meshFrame.position.y = HEIGHT_ABOVE_GROUND;
                                 meshFrame.scale.x = 1.1 * image.width / 100;
                                 meshFrame.scale.y = 1.1 * image.height / 100;
-                                // meshFrame.position.x += constantX * order;
                                 meshFrame.position.x += X;
-                                // meshFrame.position.z -= constantZ * order;
                                 meshFrame.position.z -= Z;
                                 meshFrame.name = "BACK-" + order;
                                 zscene.add( meshFrame );
@@ -363,12 +354,10 @@
                     texturePainting1.mapping = THREE.UVMapping;
                 }
 
-
                 var i;
                 for (i  = 0; i <= MAX_IMAGE; i++){
                     paint(i)
                 }
-
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
@@ -392,12 +381,10 @@
 
                 updateSun();
                 renderer.autoClear = false;
-                
 				document.body.appendChild( renderer.domElement );
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
 			}
-
 
 			function onDocumentMouseMove( event ) {
 
@@ -405,7 +392,6 @@
 				mouseY = ( event.clientY - windowHalfY );
 
 			}
-
 
 			function animate() {
 
@@ -427,9 +413,6 @@
                 let lastAzimuth = .22; 
                 let firstAzimuth = .13;
                 let lastZratio = camera.position.z / lastZ;
-                // console.log((lastZratio*(lastInclination - firstInclination)) + firstInclination);
-                // console.log("Z: ", camera.position.z)
-                // console.log(parameters['inclination'])
                 if (camera.position.z <= 0) {
                     parameters['inclination'] = (lastZratio*(lastInclination - firstInclination)) + firstInclination;
                     parameters['azimuth'] = (lastZratio*(lastInclination - firstAzimuth)) + firstAzimuth ;
@@ -577,6 +560,10 @@
             
             function onKeyDown(event){
                 switch ( event.keyCode ) {
+                    case 80:
+                        console.log("YTE")
+                        controls.unlock();
+                        break;
 
                     case 38: // up
                     case 87: // w

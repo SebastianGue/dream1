@@ -49,7 +49,20 @@
 				line-height: 24px;
 
 				cursor: pointer;
-			}
+            }
+            .loader {
+                border: 8px solid #f3f3f3; /* Light grey */
+                border-top: 8px solid #3498db; /* Blue */
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                animation: spin 2s linear infinite;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
 		</style>
 	</head>
 
@@ -58,15 +71,17 @@
             <div id="blocker">
 
                 <div id="instructions">
-                    <span style="font-size:48px">NOT TO LONG AGO</span><br/>
-                    <span style="font-size:12px">By Sebastián Guerrero Cárdenas</span><br/><br/><br/><br/>
-                    <span style="font-size:24px;color: rgb(255, 75, 75);">Click to begin.</span>
+                    <span style="font-size:56px">NOT TO LONG AGO</span><br/>
+                    <span style="font-size:18px">By Sebastián Guerrero Cárdenas</span><br/><br/><br/><br/>
+                    <span id="MAININSTRUCTION" style="font-size:32px;color: rgb(255, 75, 75);">Loading Content...</span>
                     <br /><br />
                     Move: W A S D<br/>
                     Jump: SPACE<br/>
                     Look: MOUSE<br/>
-                    Exit: ESC<br/>
+                
+                    <span style="font-size:12px;color: rgb(237, 255, 75);">TO PAUSE OR EXIT : "P" / "esc"</span><br/>
                     <br/>
+                    
                     <span style="font-size:18px">For optimal experience, refresh the page atleast once, and unmute to enjoy the tunes</span><br/>
                     <audio controls muted src="audio\ES_Pillow Cases - Guustavv.mp3" id="my_audio" loop="loop" autoplay="autoplay"></audio><br/>
                     <span style="font-size:12px">ES_Pillow Cases - Guustavv</span>
@@ -90,6 +105,7 @@
 			var moveLeft = false;
 			var moveRight = false;
             var canJump = false;
+            var LOADED = false;
             var raycaster;
 			var prevTime = performance.now();
 			var velocity = new THREE.Vector3();
@@ -141,9 +157,6 @@
 
 			function init() {
 
-				// container = document.createElement( 'div' );
-				// document.body.appendChild( container );
-
 				camera = new THREE.PerspectiveCamera( 35, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 12300 );
                 camera.position.z = 1500;
 
@@ -157,7 +170,9 @@
 
 				instructions.addEventListener( 'click', function () {
                     console.log("CLICKED")
-					controls.lock();
+                    if (LOADED){
+                        controls.lock();
+                    }
 
 				}, false );
 
@@ -444,7 +459,7 @@
                         console.log("delta: ",( time - prevTime ) / 100)
                         delta = .2;
                     }
-                    var delta = .12
+                    var delta = .17
                     velocity.x -= velocity.x * 10.0 * delta;
                     velocity.z -= velocity.z * 10.0 * delta ;
 
@@ -660,7 +675,10 @@
                 let loaded = scene1.getObjectByName( lastImage ) != undefined;
                 if (! (loaded)){
                     console.log("IMAGES NOT LOADED", lastImage);
+                } else {
+                    document.getElementById("MAININSTRUCTION").innerText = "Click to begin."
                 }
+                LOADED = loaded;
                 return loaded;
             }
 
